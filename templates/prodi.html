@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Link jquery & ajax -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}"
+        rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.js"></script>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <!-- Sweet alert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+        function delete_prodi(id_prodi, nama_prodi) {
+            let idnya = id_prodi;
+            let nama = nama_prodi;
+            Swal.fire({
+                title: "Anda yakin?",
+                text: `Akan menghapus ${nama}!`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Ya, hapus konten!`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: `/hapus_prodi`,
+                        data: {
+                            id_give: idnya
+                        },
+                        success: function (response) {
+                            if (response['result'] === 'success') {
+                                console.log(response);
+                                Swal.fire({
+                                    title: "Deleted!",
+                                    text: response['msg'],
+                                    icon: "success",
+                                    showConfirmButton: false,
+                                    timer: 3000
+                                });
+                                // Menunda pengalihan halaman selama 3 detik
+                                setTimeout(function () {
+                                    location.reload()
+                                }, 3000);
+                            } else {
+                                console.log("gagal");
+                            }
+                        }
+                    })
+                }
+            });
+        }
+
+        // function updateModal(uuid, kode_prodi, nama_prodi, kode_dosen) {
+        //     $('#formUpdate').attr('action', `/edit-prodi/${uuid}`);
+        //     $('#editkd_prodi').attr('value', `${kode_prodi}`);
+        //     $('#editprodi').attr('value', `${nama_prodi}`);
+        //     $('#editkd_dosen').attr('value', `${kode_dosen}`);
+        //     $('#editModal').modal('show');
+        // }
+
+        let originalKodeProdi = '';
+    let originalNamaProdi = '';
+    let originalKodeDosen = '';
+
+    function updateModal(uuid, kode_prodi, nama_prodi, kode_dosen) {
+        $('#formUpdate').attr('action', `/edit-prodi/${uuid}`);
+        originalKodeProdi = kode_prodi;
+        originalNamaProdi = nama_prodi;
+        originalKodeDosen = kode_dosen;
+
+        $('#editkd_prodi').val(kode_prodi);
+        $('#editprodi').val(nama_prodi);
+        $('#editkd_dosen').val(kode_dosen);
+
+        $('#editModal').modal('show');
+    }
+
+    $(document).ready(function () {
+        $('#dosenTable').DataTable();
+
+        $('#formUpdate').on('submit', function (e) {
+            const updatedKodeProdi = $('#editkd_prodi').val();
+            const updatedNamaProdi = $('#editprodi').val();
+            const updatedKodeDosen = $('#editkd_dosen').val();
+
+            if (updatedKodeProdi === '' || updatedNamaProdi === '' || updatedKodeDosen === '') {
+                e.preventDefault();
+                Swal.fire({
+                    title: "Field Kosong",
+                    text: "Kode Prodi, Nama Prodi, dan Kode Dosen tidak boleh kosong!",
+                    icon: "warning",
+                    confirmButtonColor: "#3085d6",
+                    confirmButtonText: "OK"
+                });
+            } else if (updatedKodeProdi === originalKodeProdi &&
+                       updatedNamaProdi === originalNamaProdi &&
+                       updatedKodeDosen === originalKodeDosen) {
+                e.preventDefault();
+                Swal.fire({
+                    title: "Tidak ada perubahan",
+                    text: "Data belum ada yang diedit!",
+                    icon: "warning",
+                    confirmButtonColor: "#3085d6",
+                    confirmButtonText: "OK"
+                });
+            }
+        });
+    });
+    </script>
+</head>
+
+<body>
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        <!-- Sidebar Start -->
+        <div class="sidebar pe-4 pb-3">
+            <nav class="navbar bg-light navbar-light">
+                <a href="index.html" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary"><i class="fa fa-hashtag me-2"></i>Dashboard</h3>
+                </a>
+                <div class="d-flex align-items-center ms-4 mb-4">
+                    <div class="position-relative">
+                        <img class="rounded-circle" src="{{ url_for('static', filename='img/user.jpg') }}" alt=""
+                            style="width: 40px; height: 40px;">
+                        <div
+                            class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1">
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">Randy</h6>
+                        <span>Admin</span>
+                    </div>
+                </div>
+                <div class="navbar-nav w-100">
+                    <a href="/" class="nav-item nav-link {% if request.path == '/' %}active{% endif %}"><i
+                            class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+                    <a href="/halaman_mahasiswa"
+                        class="nav-item nav-link {% if request.path == '/halaman_mahasiswa' %}active{% endif %}"><i
+                            class="fa fa-chalkboard-teacher me-2"></i>Mahasiswa</a>
+                    <a href="/halaman_dosen"
+                        class="nav-item nav-link {% if request.path == '/halaman_dosen' %}active{% endif %}"><i
+                            class="fa fa-user-graduate me-2"></i>Dosen</a>
+                    <a href="/halaman_prodi"
+                        class="nav-item nav-link {% if request.path == '/halaman_prodi' %}active{% endif %}"><i
+                            class="fa fa-graduation-cap me-2"></i>Prodi</a>
+                </div>
+        </div>
+        </nav>
+    </div>
+    <!-- Sidebar End -->
+
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="/" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+
+            <!-- <div class="navbar-nav align-items-center ms-auto">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <img class="rounded-circle me-lg-2" src="{{ url_for('static', filename='img/user.jpg') }}"
+                                alt="" style="width: 40px; height: 40px;">
+                            <span class="d-none d-lg-inline-flex">Randy Aranda</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
+                            <a href="#" class="dropdown-item">My Profile</a>
+                            <a href="#" class="dropdown-item">Settings</a>
+                            <a href="#" class="dropdown-item">Log Out</a>
+                        </div>
+                    </div>
+                </div> -->
+        </nav>
+        <!-- Navbar End -->
+
+
+        <!-- Mahasiswa Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="row g-4">
+                <div class="col-sm-12">
+                    <div class="bg-light rounded h-100 p-4">
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#exampleModal">
+                            Tambah Data +
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="col-12 mb-4">
+                            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                                aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="exampleModalLabel">Form Tambah Prodi
+                                            </h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="prodiForm" action="/tambah_prodi" method="post">
+                                                <div class="mb-3">
+                                                    <label for="kd_prodi" class="form-label">Kode matakuliah</label>
+                                                    <input type="text" class="form-control" id="kd_prodi"
+                                                        name="kd_prodi" placeholder="Masukkan Kode prodi" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="prodi" class="form-label">Nama Prodi</label>
+                                                    <input type="text" class="form-control" id="prodi" name="prodi"
+                                                        placeholder="Masukkan nama prodi" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="kd_dosen" class="form-label">Kode Dosen</label>
+                                                    <select class="form-select mb-3" aria-label="Default select example"
+                                                        id="kd_dosen" name="kd_dosen">
+                                                        <option selected>Dosen</option>
+                                                        {% for i in dosen %}
+                                                        <option value="{{ i.kode_dosen }} - {{ i.nama_dosen }} ">
+                                                            {{ i.kode_dosen }} - {{ i.nama_dosen }}</option>
+                                                        {%endfor%}
+                                                    </select>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary">Submit</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="table table-bordered mt-3" id="dosenTable">
+                            <thead>
+                                <tr>
+                                    <th scope="col">No</th>
+                                    <th scope="col">Kode Prodi</th>
+                                    <th scope="col">Nama Prodi</th>
+                                    <th scope="col">Dosen</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in prodi %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ i.kode_prodi }}</td>
+                                    <td>{{ i.nama_prodi }}</td>
+                                    <td>{{ i.kode_dosen }}</td>
+                                    <td>
+                                        <a
+                                            onclick='updateModal({{i.uuid | tojson}}, {{i.kode_prodi | tojson}} , {{i.nama_prodi | tojson}} ,{{i.kode_dosen | tojson}} )'>
+                                            <button class="btn btn-warning me-md-2" type="button">
+                                                <i class="fas fa-pencil-alt text-white"></i>
+                                            </button>
+                                        </a>
+                                        <a onclick='delete_prodi({{i.uuid | tojson}},{{i.nama_prodi | tojson}})'>
+                                            <button class="btn btn-danger me-md-2" type="button">
+                                                <i class="fa fa-trash color text-white"></i>
+                                            </button>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Kategori End -->
+    </div>
+    <!-- Content End -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- Fungsi modal edit -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editMahasiswaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="editMahasiswaLabel">Edit Data</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" id="formUpdate">
+
+                        <div class="mb-3">
+                            <label for="editkd_prodi" class="form-label">Kode matakuliah</label>
+                            <input type="text" class="form-control" id="editkd_prodi" name="editkd_prodi"
+                                placeholder="Masukkan Kode prodi" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editprodi" class="form-label">Nama Prodi</label>
+                            <input type="text" class="form-control" id="editprodi" name="editprodi"
+                                placeholder="Masukkan nama prodi" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editkd_dosen" class="form-label">Kode Prodi</label>
+                            <select class="form-select mb-3" aria-label="Default select example" id="editkd_dosen"
+                                name="editkd_dosen">
+                                <option selected>Dosen</option>
+                                {% for i in dosen %}
+                                <option value="{{ i.kode_dosen }} - {{ i.nama_dosen }} ">
+                                    {{ i.kode_dosen }} - {{ i.nama_dosen }}</option>
+                                {%endfor%}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            $('#dosenTable').DataTable();
+        });
+    </script>
+    <!-- JavaScript Libraries -->
+    <!-- JavaScript Libraries -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

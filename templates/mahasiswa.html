@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Project Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Link jquery & ajax -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}"
+        rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.js"></script>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <!-- Sweet alert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function delete_mahasiswa(id_mahasiswa, nama_mahasiswa) {
+            let idnya = id_mahasiswa;
+            let nama = nama_mahasiswa;
+            Swal.fire({
+                title: "Anda yakin?",
+                text: `Akan menghapus ${nama}!`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Ya, hapus konten!`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: `/hapus_mahasiswa`,
+                        data: {
+                            id_give: idnya
+                        },
+                        success: function (response) {
+                            if (response['result'] === 'success') {
+                                console.log(response);
+                                Swal.fire({
+                                    title: "Deleted!",
+                                    text: response['msg'],
+                                    icon: "success",
+                                    showConfirmButton: false,
+                                    timer: 3000
+                                });
+                                // Menunda pengalihan halaman selama 3 detik
+                                setTimeout(function () {
+                                    location.reload()
+                                }, 3000);
+                            } else {
+                                console.log("gagal");
+                            }
+                        }
+                    })
+                }
+            });
+        }
+
+        $(document).ready(function () {
+    $('#formUpdate').on('submit', function (event) {
+        // Ambil nilai input asli dan yang telah diubah
+        const originalNim = $(this).data('original-nim');
+        const originalNama = $(this).data('original-nama');
+        const originalAlamat = $(this).data('original-alamat');
+        const originalKodeProdi = $(this).data('original-kd_prodi');
+
+        const editedNim = $('#editnim').val();
+        const editedNama = $('#editnama_mahasiswa').val();
+        const editedAlamat = $('#editalamat').val();
+        const editedKodeProdi = $('#editkd_prodi').val();
+
+        // Cek jika tidak ada perubahan data
+        if (
+            originalNim === editedNim &&
+            originalNama === editedNama &&
+            originalAlamat === editedAlamat &&
+            originalKodeProdi === editedKodeProdi
+        ) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak ada perubahan',
+                text: 'Data belum ada yang diedit!',
+            });
+            event.preventDefault(); // Cegah submit form
+        }
+        // Cek jika kode prodi belum dipilih atau diubah
+        else if (!editedKodeProdi) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Kode Prodi belum dimasukkan',
+                text: 'Silakan pilih kode prodi.',
+            });
+            event.preventDefault(); // Cegah submit form
+        }
+    });
+});
+
+function updateModal(uuid, nim, nama, alamat, kode_prodi) {
+    $('#formUpdate').attr('action', `/edit-mahasiswa/${uuid}`);
+    $('#editnama_mahasiswa').val(nama);
+    $('#editnim').val(nim);
+    $('#editalamat').val(alamat);
+    $('#editkd_prodi').val(kode_prodi);
+    $('#editModal').modal('show');
+
+    // Simpan nilai asli untuk perbandingan nanti
+    $('#formUpdate').data('original-nim', nim);
+    $('#formUpdate').data('original-nama', nama);
+    $('#formUpdate').data('original-alamat', alamat);
+    $('#formUpdate').data('original-kd_prodi', kode_prodi);
+}
+
+    </script>
+</head>
+
+<body>
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        <!-- Sidebar Start -->
+        <div class="sidebar pe-4 pb-3">
+            <nav class="navbar bg-light navbar-light">
+                <a href="index.html" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary"><i class="fa fa-hashtag me-2"></i>Dashboard</h3>
+                </a>
+                <div class="d-flex align-items-center ms-4 mb-4">
+                    <div class="position-relative">
+                        <img class="rounded-circle" src="{{ url_for('static', filename='img/user.jpg') }}" alt=""
+                            style="width: 40px; height: 40px;">
+                        <div
+                            class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1">
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">Randy</h6>
+                        <span>Admin</span>
+                    </div>
+                </div>
+                <div class="navbar-nav w-100">
+                    <a href="/" class="nav-item nav-link {% if request.path == '/' %}active{% endif %}"><i
+                            class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+                    <a href="/halaman_mahasiswa"
+                        class="nav-item nav-link {% if request.path == '/halaman_mahasiswa' %}active{% endif %}"><i
+                            class="fa fa-chalkboard-teacher me-2"></i>Mahasiswa</a>
+                    <a href="/halaman_dosen"
+                        class="nav-item nav-link {% if request.path == '/halaman_dosen' %}active{% endif %}"><i
+                            class="fa fa-user-graduate me-2"></i>Dosen</a>
+                    <a href="/halaman_prodi"
+                        class="nav-item nav-link {% if request.path == '/halaman_prodi' %}active{% endif %}"><i
+                            class="fa fa-graduation-cap me-2"></i>Prodi</a>
+                </div>
+        </div>
+        </nav>
+    </div>
+    <!-- Sidebar End -->
+
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="/" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+
+            <!-- <div class="navbar-nav align-items-center ms-auto">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <img class="rounded-circle me-lg-2" src="{{ url_for('static', filename='img/user.jpg') }}"
+                                alt="" style="width: 40px; height: 40px;">
+                            <span class="d-none d-lg-inline-flex">Randy Aranda</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
+                            <a href="#" class="dropdown-item">My Profile</a>
+                            <a href="#" class="dropdown-item">Settings</a>
+                            <a href="#" class="dropdown-item">Log Out</a>
+                        </div>
+                    </div>
+                </div> -->
+        </nav>
+        <!-- Navbar End -->
+
+
+        <!-- Mahasiswa Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="row g-4">
+                <div class="col-sm-12">
+                    <div class="bg-light rounded h-100 p-4">
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#exampleModal">
+                            Tambah Data +
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="col-12 mb-4">
+                            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                                aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="exampleModalLabel">Form Tambah Mahasiswa
+                                            </h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="mahasiswaForm" action="/tambah_mahasiswa" method="post">
+                                                <div class="mb-3">
+                                                    <label for="nim" class="form-label">Nomor Induk Mahasiswa
+                                                        (NIM)</label>
+                                                    <input type="text" class="form-control" id="nim" name="nim"
+                                                        placeholder="Masukkan Nomor Induk Mahasiswa" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="nama_mahasiswa" class="form-label">Nama
+                                                        Mahasiswa</label>
+                                                    <input type="text" class="form-control" id="nama_mahasiswa"
+                                                        name="nama_mahasiswa" placeholder="Masukkan nama mahasiswa" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="alamat" class="form-label">Alamat</label>
+                                                    <input type="text" class="form-control" id="alamat" name="alamat"
+                                                        placeholder="masukkan alamat" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="kd_prodi" class="form-label">Kode Prodi</label>
+                                                    <select class="form-select mb-3" aria-label="Default select example"
+                                                        id="kd_prodi" name="kd_prodi">
+                                                        <option selected>Kode Prodi</option>
+                                                        {% for i in output %}
+                                                        <option value="{{ i.kode_prodi }} - {{ i.nama_prodi }} ">
+                                                            {{ i.kode_prodi }} - {{ i.nama_prodi }}</option>
+                                                        {%endfor%}
+                                                    </select>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary">Submit</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <table class="table table-bordered mt-3" id="mahasiswaTable">
+                            <thead>
+                                <tr>
+                                    <th scope="col">No</th>
+                                    <th scope="col" class="text-center">Nim</th>
+                                    <th scope="col" class="text-center">Nama Mahasiswa</th>
+                                    <th scope="col" class="text-center">Alamat</th>
+                                    <th scope="col" class="text-center">Kode Prodi</th>
+                                    <th scope="col" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in mahasiswa %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ i.nim }}</td>
+                                    <td>{{ i.nama }}</td>
+                                    <td>{{ i.alamat }}</td>
+                                    <td>{{ i.kode_prodi }}</td>
+                                    <td>
+                                        <a
+                                            onclick='updateModal({{i.uuid | tojson}},{{i.nim | tojson}} ,{{i.nama | tojson}} ,{{i.alamat | tojson}},{{i.kode_prodi | tojson}})'>
+                                            <button class="btn btn-warning me-md-2" type="button">
+                                                <i class="fas fa-pencil-alt text-white"></i>
+                                            </button>
+                                        </a>
+                                        <a onclick='delete_mahasiswa({{i.uuid | tojson}},{{i.nama | tojson}})'>
+                                            <button class="btn btn-danger me-md-2" type="button">
+                                                <i class="fa fa-trash color text-white"></i>
+                                            </button>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mahasiswa End -->
+    </div>
+    <!-- Content End -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- Fungsi modal edit -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editMahasiswaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="editMahasiswaLabel">Edit Data</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formUpdate" action="/edit-mahasiswa/{{uuid}}" method="post">
+
+                        <div class="mb-3">
+                            <label for="editnama_mahasiswa" class="form-label">Nama Mahasiswa</label>
+                            <input type="text" class="form-control" id="editnama_mahasiswa" name="editnama_mahasiswa"
+                                placeholder="Masukkan nama mahasiswa" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editnim" class="form-label">Nomor Induk Mahasiswa (NIM)</label>
+                            <input type="text" class="form-control" id="editnim" name="editnim"
+                                placeholder="Masukkan Nomor Induk Mahasiswa" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editalamat" class="form-label">Alamat</label>
+                            <input type="text" class="form-control" id="editalamat" name="editalamat"
+                                placeholder="masukkan alamat" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editkd_prodi" class="form-label">Kode Prodi</label>
+                            <select class="form-select mb-3" aria-label="Default select example" id="editkd_prodi"
+                                name="editkd_prodi">
+                                <option selected>Pilih Prodi</option>
+                                {% for i in output %}
+                                <option value="{{ i.kode_prodi }} - {{ i.nama_prodi }} ">{{ i.kode_prodi }} -
+                                    {{ i.nama_prodi }}</option>
+                                {%endfor%}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('#mahasiswaTable').DataTable();
+        });
+    </script>
+    <!-- JavaScript Libraries -->
+    <!-- JavaScript Libraries -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
